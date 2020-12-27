@@ -1,0 +1,4 @@
+#Team Sharing config
+blockedTeams:
+  - admin
+  - spectator

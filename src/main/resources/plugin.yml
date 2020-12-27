@@ -1,0 +1,21 @@
+name: ${project.name}
+version: ${project.version}
+main: com.kruthers.teamsharing.TeamSharing
+api-version: 1.16
+authors: [kruthers, marhjo]
+description: A plugin that causes people on the same team to have the same inventory
+permissions:
+  teamsharing.corecommand:
+    default: true
+    description: Allows us of the main command
+  teamsharing.manage:
+    default: op
+    description: Allows people to start and stop team sharing
+  teamsharing.reload:
+    default: op
+    description: allows people to reload team sharing
+commands:
+  teamsharing:
+    permission: teamsharing.corecommand
+    description: core command
+    usage: /<command> [<start>|<stop>|<wipe>|<reload>]
