@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kruthers.teamsharing;
+package com.kruthers.old;
 
-import com.kruthers.teamsharing.objects.TeamInventory;
+import com.kruthers.old.objects.TeamInventory;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;

@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kruthers.teamsharing.utils;
+package com.kruthers.old.utils;
 
-import com.kruthers.teamsharing.objects.TeamInventory;
-import com.kruthers.teamsharing.TeamSharing;
+import com.kruthers.old.objects.TeamInventory;
+import com.kruthers.old.TeamSharing;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;

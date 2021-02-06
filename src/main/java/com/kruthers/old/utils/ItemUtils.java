@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kruthers.teamsharing.utils;
+package com.kruthers.old.utils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;

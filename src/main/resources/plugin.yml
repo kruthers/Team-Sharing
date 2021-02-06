@@ -18,4 +18,4 @@ commands:
   teamsharing:
     permission: teamsharing.corecommand
     description: core command
-    usage: /<command> [<start>|<stop>|<wipe>|<reload>]
+    usage: /<command> [<start>|<stop>|<version>|<reload>]

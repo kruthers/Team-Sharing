@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kruthers.teamsharing.events;
+package com.kruthers.old.events;
 
-import com.kruthers.teamsharing.objects.TeamInventory;
+import com.kruthers.old.objects.TeamInventory;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;

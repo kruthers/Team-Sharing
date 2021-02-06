@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.kruthers.teamsharing.objects;
+package com.kruthers.old.objects;
 
-import com.kruthers.teamsharing.utils.ItemUtils;
+import com.kruthers.old.utils.ItemUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
