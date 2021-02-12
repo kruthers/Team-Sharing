@@ -20,7 +20,8 @@ package com.kruthers.teamsharing.inventory;
 
 import lombok.Getter;
 import lombok.NonNull;
-import org.bukkit.Bukkit;
+import lombok.Setter;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -29,7 +30,10 @@ import org.bukkit.inventory.ItemStack;
 public class CustomInventory {
 
     @Getter
+    @Setter
     private ItemStack[] contents = new ItemStack[40];
+
+    public int counter = 0;
 
     public CustomInventory(Inventory inv){
         this.contents = inv.getContents();
@@ -220,6 +224,26 @@ public class CustomInventory {
     public void LoadToPlayer(Player player) {
         player.getInventory().setContents(this.contents);
 
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder contents = new StringBuilder();
+        for (int i = 0; i < this.contents.length; i++) {
+            ItemStack item = this.contents[i];
+            if (item == null) {
+                contents.append(ChatColor.GOLD+""+i+ChatColor.WHITE+": "+ChatColor.GREEN+"EMPTY");
+            }  else {
+                contents.append(ChatColor.GOLD+""+i+ChatColor.WHITE+": "+ChatColor.GREEN+item.getType());
+            }
+
+            if (i < (this.contents.length-1)) {
+                contents.append(ChatColor.WHITE+", ");
+            }
+        }
+
+        return "{"+ ChatColor.AQUA +"Contents"+ ChatColor.WHITE +": ["+contents+ChatColor.WHITE +"], "
+                +ChatColor.AQUA+"UpdateCount"+ChatColor.WHITE+": "+ChatColor.GREEN+this.counter+ChatColor.WHITE+"}";
     }
 
 }

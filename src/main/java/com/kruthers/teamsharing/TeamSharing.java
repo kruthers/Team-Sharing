@@ -24,6 +24,7 @@ import com.kruthers.teamsharing.inventory.CustomInventory;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -40,6 +41,10 @@ public class TeamSharing extends JavaPlugin {
     private static boolean sharingActive = false;
     public static Properties properties = new Properties();
     public static HashMap<String, Set<Player>> playerCache = new HashMap<>();
+
+    @Getter
+    @Setter
+    private static HashMap<String, CustomInventory> teamInventories = new HashMap<>();
 
     //Runable - Used to ensure peoples inventories are up to date and refresh the player cache
     private static BukkitRunnable mainThread = new BukkitRunnable() {
@@ -71,11 +76,6 @@ public class TeamSharing extends JavaPlugin {
         }
     };
 
-    //getters / setters
-    @Getter
-    @Setter
-    private static HashMap<String, CustomInventory> teamInventories = new HashMap<>();
-
     @Override
     public void onEnable() {
         logger = this.getLogger();
@@ -96,7 +96,7 @@ public class TeamSharing extends JavaPlugin {
         this.getServer().getPluginCommand("teamsharing").setExecutor(new CoreCommand(this));
 
         logger.info("Commands registered, loading core runables ");
-        mainThread.runTaskTimerAsynchronously(this,100,60);
+        //mainThread.runTaskTimerAsynchronously(this,100,60);
 
 
     }
@@ -106,16 +106,19 @@ public class TeamSharing extends JavaPlugin {
 
     }
 
-    public static CustomInventory getInventory(String team) {
-        if (teamInventories.containsKey(team)) {
-            return teamInventories.get(team);
-        } else {
-            return null;
-        }
+    public static void setInventory(String team, CustomInventory inv) {
+        Bukkit.broadcastMessage(ChatColor.GOLD+"\nSaving to "+team+":\n"+ChatColor.WHITE+inv.toString());
+        inv.counter++;
+        teamInventories.put(team, inv);
+        Bukkit.broadcastMessage(ChatColor.GOLD+"\nSaved for "+team+":\n"+ChatColor.WHITE+teamInventories.get(team).toString());
     }
 
-    public static void setInventory(String team, CustomInventory inv) {
-        teamInventories.put(team, inv);
+    public static CustomInventory getInventory(String team) {
+        CustomInventory inv = teamInventories.get(team);
+        if (inv != null) {
+            Bukkit.broadcastMessage(ChatColor.GOLD+"\nReceived for "+team+":\n"+ChatColor.WHITE+teamInventories.get(team).toString());
+        }
+        return inv;
     }
 
     public static Set<Player> getTeamPlayers(String team) {

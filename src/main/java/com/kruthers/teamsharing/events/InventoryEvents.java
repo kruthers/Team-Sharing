@@ -95,7 +95,10 @@ public class InventoryEvents implements Listener {
         boolean inPlayerInv = true;
         if (rawSlot < containerSlots) {
             inPlayerInv = false;
+            return; // TEMP
         }
+
+        //Bukkit.broadcastMessage("\n\nEvent Start\n\n"+inv.toString());
 
         /*
         Actions:
@@ -135,14 +138,13 @@ public class InventoryEvents implements Listener {
 
         }
 
-
-
         if (canceled) {
             event.setCancelled(true);
             player.sendMessage(ChatColor.RED+"Inventory desynced, resyncing");
             inv.LoadToPlayer(player);
 
         } else {
+            //Bukkit.broadcastMessage("\nSaving\n\n"+inv.toString()+ChatColor.RED+"\n Event End");
             Utils.loadInvToTeam(inv,team.getName(),player.getUniqueId());
             TeamSharing.setInventory(team.getName(),inv);
         }
