@@ -19,7 +19,7 @@
 package com.kruthers.teamsharing;
 
 import com.kruthers.teamsharing.commands.CoreCommand;
-import com.kruthers.teamsharing.events.InventoryEvents;
+import com.kruthers.teamsharing.events.*;
 import com.kruthers.teamsharing.inventory.CustomInventory;
 import lombok.Getter;
 import lombok.Setter;
@@ -90,7 +90,43 @@ public class TeamSharing extends JavaPlugin {
         logger.info("Enabling Team Sharing by kruthers Version "+properties.getProperty("version"));
 
         logger.info("Registering events...");
+        /* Events TODO
+        - Inventory:
+          - shift click
+          - collect to cursor
+        - Throw an item (egg, snowball)
+        - Equip Armour
+        - middle click
+        - Feed an animal
+        - Right click Respawn Anchor
+        - fill a bucket
+        - empty a bucket
+         */
+        /* Events DONE
+        - Inventory:
+          - Remove
+          - swap
+          - number swap
+          - Drop (q on a stack)
+          - Place
+        - Drop (q on hotbar)
+        - Place a block
+        - Arrow pickup
+        - Tool Damage
+        - Pick up
+        - Shoot a arrow
+        - Consume an item (food/ potion
+        - Break Item
+         */
+        /* Not working as intended
+        - Inventory:
+          - Drag - not working when item in slot
+         */
         this.getServer().getPluginManager().registerEvents(new InventoryEvents(), this);
+        this.getServer().getPluginManager().registerEvents(new BlockEvents(), this);
+//        this.getServer().getPluginManager().registerEvents(new EntityEvents(), this);
+        this.getServer().getPluginManager().registerEvents(new EquipmentEvents(), this);
+        this.getServer().getPluginManager().registerEvents(new ExternalEvents(), this);
 
         logger.info("Events registered, Registering commands...");
         this.getServer().getPluginCommand("teamsharing").setExecutor(new CoreCommand(this));
@@ -108,9 +144,9 @@ public class TeamSharing extends JavaPlugin {
 
     public static void setInventory(String team, CustomInventory inv) {
         Bukkit.broadcastMessage(ChatColor.GOLD+"\nSaving to "+team+":\n"+ChatColor.WHITE+inv.toString());
-        inv.counter++;
-        teamInventories.put(team, inv);
-        Bukkit.broadcastMessage(ChatColor.GOLD+"\nSaved for "+team+":\n"+ChatColor.WHITE+teamInventories.get(team).toString());
+        CustomInventory newInv = inv.clone();
+        teamInventories.put(team, newInv);
+//        Bukkit.broadcastMessage(ChatColor.GOLD+"\nSaved for "+team+":\n"+ChatColor.WHITE+teamInventories.get(team).toString());
     }
 
     public static CustomInventory getInventory(String team) {

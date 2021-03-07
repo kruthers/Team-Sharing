@@ -18,7 +18,6 @@
 
 package com.kruthers.teamsharing.commands;
 
-import com.kruthers.old.objects.TeamInventory;
 import com.kruthers.teamsharing.TeamSharing;
 import com.kruthers.teamsharing.inventory.CustomInventory;
 import org.bukkit.Bukkit;
@@ -30,8 +29,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.HashMap;
 
 public class CoreCommand implements CommandExecutor {
     private TeamSharing plugin;
@@ -66,8 +63,8 @@ public class CoreCommand implements CommandExecutor {
                 this.startCommand(true);
 
             } else if (checkWithPerms(sender,"stop","manage",arg,false)) {
-                sender.sendMessage(ChatColor.RED+"Coming soon...");
-
+                sender.sendMessage(ChatColor.RED+"Stopped team sharing");
+                TeamSharing.disableSharing();
 
             } else {
                 sender.sendMessage(ChatColor.RED+"Invalid argument given, correct usage: "+command.getUsage());

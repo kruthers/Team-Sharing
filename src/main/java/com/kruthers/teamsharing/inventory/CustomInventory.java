@@ -21,38 +21,36 @@ package com.kruthers.teamsharing.inventory;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.jetbrains.annotations.NotNull;
 
 public class CustomInventory {
 
     @Getter
     @Setter
-    private ItemStack[] contents = new ItemStack[40];
-
-    public int counter = 0;
+    private ItemStack[] contents = new ItemStack[41];
 
     public CustomInventory(Inventory inv){
-        this.contents = inv.getContents();
         ItemStack air = new ItemStack(Material.AIR);
-        for (int i = 0; i <this.contents.length; i ++) {
-            ItemStack item = this.contents[i];
-            if (item == null) {
-                this.contents[i] = air.clone();
-            }
+        for (int i = 0; i <inv.getContents().length && i < 41; i ++) {
+            ItemStack item = inv.getItem(i);
+            this.setItem(item,i);
         }
     }
 
     public CustomInventory() {
         ItemStack air = new ItemStack(Material.AIR);
 
-        for (int i = 0; i <this.contents.length; i ++) {
-            ItemStack item = this.contents[i];
+        for (int i = 0; i <= 40; i ++) {
+            ItemStack item = this.getItem(i);
             if (item == null) {
-                this.contents[i] = air.clone();
+                this.setItem(air.clone(),i);
             }
         }
     }
@@ -63,16 +61,16 @@ public class CustomInventory {
      * @param slot the slot to set
      * @throws IndexOutOfBoundsException
      */
-    protected void setItem(ItemStack stack, @NonNull int slot) throws IndexOutOfBoundsException{
+    public void setItem(ItemStack stack, @NonNull int slot) throws IndexOutOfBoundsException{
+        if (slot < 0 || slot > 40) {
+            throw new IndexOutOfBoundsException("slot "+slot+" out of bounds for inventory");
+        }
+
         if (stack == null) {
             stack = new ItemStack(Material.AIR);
         }
 
-        if (slot > this.contents.length || slot < 0) {
-            throw new IndexOutOfBoundsException("slot "+slot+" out of bounds for inventory");
-        }
-
-        this.contents[slot] = stack;
+        this.contents[slot] = stack.clone();
 
     }
 
@@ -82,12 +80,18 @@ public class CustomInventory {
      * @return The item in that slot Air if none
      * @throws IndexOutOfBoundsException
      */
-    protected ItemStack getItem(@NonNull int slot) throws IndexOutOfBoundsException {
-        if (slot > this.contents.length || slot < 0) {
+    public ItemStack getItem(@NonNull int slot) throws IndexOutOfBoundsException {
+        if (slot < 0 || slot > 40) {
             throw new IndexOutOfBoundsException("slot "+slot+" out of bounds for inventory");
         }
 
-        return this.contents[slot];
+        ItemStack item = this.contents[slot];
+
+        if (item == null) {
+            return new ItemStack(Material.AIR);
+        } else {
+            return item;
+        }
     }
 
     /**
@@ -98,7 +102,7 @@ public class CustomInventory {
      * @throws IndexOutOfBoundsException If slot is not in the player's inventory
      */
     public int addItem(@NonNull ItemStack item, @NonNull int slot) throws IndexOutOfBoundsException {
-        if (slot > this.contents.length || slot < 0) {
+        if (slot > 40 || slot < 0) {
             throw new IndexOutOfBoundsException("slot "+slot+" out of bounds for inventory");
         }
 
@@ -153,7 +157,7 @@ public class CustomInventory {
      * @throws IndexOutOfBoundsException
      */
     public boolean removeItem(@NonNull ItemStack localItem, @NonNull int count, @NonNull int slot) throws IndexOutOfBoundsException {
-        if (slot > this.contents.length || slot < 0) {
+        if (slot > 40 || slot < 0) {
             throw new IndexOutOfBoundsException("slot "+slot+" out of bounds for inventory");
         }
 
@@ -167,54 +171,63 @@ public class CustomInventory {
         }
     }
 
-    public boolean autoAddItem(@NonNull ItemStack item, @NonNull boolean checkOffHand, @NonNull boolean reverse, @NonNull int startSlot) throws IndexOutOfBoundsException {
+    public boolean autoAddItem(@NonNull ItemStack item, @NonNull boolean reverse, @NotNull int[] prioritySlot) throws IndexOutOfBoundsException {
         int count = item.getAmount();
+        Bukkit.broadcastMessage("Added "+count+" of "+item.getType());
 
-        if (startSlot != 0 && startSlot <= 35 || startSlot == 40) {
-            ItemStack checkItem = this.getItem(startSlot);
-            if (Utils.compareItems(checkItem,item,false)) {
-                count = this.addItem(item,startSlot);
+        if (prioritySlot.length > 0) {
+            for (int slot : prioritySlot) {
+                Bukkit.broadcastMessage("Checking priority slot, "+slot);
+                ItemStack slotItem = this.getItem(slot);
+                if (slotItem.getType() == Material.AIR) {
+                    continue;
+                } else {
+                    count = this.addItem(item,slot); //Does the item consistency check first
+                    item.setAmount(count);
+
+                    if (count < 1) {
+                        Bukkit.broadcastMessage("Added all (1)");
+                        return true;
+                    }
+                }
             }
-        } else {
-            throw new IndexOutOfBoundsException("Starting slot "+startSlot+" out of bounds for inventory");
         }
 
-        if (count <= 0) {
-            return true;
-        }
-
-
-        //cycle though main inventory
-        int firstEmptySlot = -1;
-        for (int i = 0; i < 36; i++){
+        int emptySlot = -1;
+        //cycle though the main inventory
+        for (int i = 0; i <= 35; i++) {
             int slot = i;
             if (reverse) {
-                if (i < 9) {
+                if (i < 8) {
                     slot = 8-i;
                 } else {
-                    slot = 53-i+9;
+                    slot = 35-i+9;
                 }
             }
 
             ItemStack slotItem = this.getItem(slot);
+
             if (slotItem.getType() == Material.AIR) {
-                if (firstEmptySlot == -1){
-                    firstEmptySlot = slot;
+                if (emptySlot == -1) {
+                    emptySlot = slot;
                 }
             } else {
                 count = this.addItem(item,slot);
                 item.setAmount(count);
+
+                if (count < 1) {
+                    Bukkit.broadcastMessage("Added all (2)");
+                    return true;
+                }
             }
 
-            if(count == 0){
-                return true;
-            }
         }
 
-        if (count > 0){
-            if (firstEmptySlot != -1) {
-                this.setItem(item,firstEmptySlot);
-            }
+        if (emptySlot > -1) {
+            this.setItem(item,emptySlot);
+            return true;
+        } else {
+            Bukkit.broadcastMessage("Extra items exist, i am broken");
         }
 
         return false;
@@ -222,28 +235,51 @@ public class CustomInventory {
     }
 
     public void LoadToPlayer(Player player) {
-        player.getInventory().setContents(this.contents);
+        PlayerInventory inv = player.getInventory();
+        for (int i = 0; i <= 40; i ++) {
+            inv.setItem(i, this.getItem(i));
+        }
 
+    }
+
+    public CustomInventory clone() {
+        CustomInventory customInventory = new CustomInventory();
+        for (int i = 0; i <= 40; i++) {
+            customInventory.setItem(this.getItem(i),i);
+        }
+
+        return customInventory;
+    }
+
+    public ItemStack[] getArmorContents() {
+        ItemStack[] armourContents = new ItemStack[4];
+        armourContents[0] = this.getItem(36);
+        armourContents[1] = this.getItem(37);
+        armourContents[2] = this.getItem(38);
+        armourContents[3] = this.getItem(39);
+
+        return armourContents;
     }
 
     @Override
     public String toString() {
         StringBuilder contents = new StringBuilder();
-        for (int i = 0; i < this.contents.length; i++) {
-            ItemStack item = this.contents[i];
+        for (int i = 0; i <= 40; i++) {
+            ItemStack item = this.getItem(i);
             if (item == null) {
+                contents.append(ChatColor.GOLD+""+i+ChatColor.WHITE+": "+ChatColor.GREEN+"NULL");
+            } else if (item.getType() == Material.AIR) {
                 contents.append(ChatColor.GOLD+""+i+ChatColor.WHITE+": "+ChatColor.GREEN+"EMPTY");
-            }  else {
-                contents.append(ChatColor.GOLD+""+i+ChatColor.WHITE+": "+ChatColor.GREEN+item.getType());
+            } else {
+                contents.append(ChatColor.GOLD+""+i+ChatColor.WHITE+": "+ChatColor.GREEN+item.getType()+" * "+item.getAmount());
             }
 
-            if (i < (this.contents.length-1)) {
+            if (i < 40) {
                 contents.append(ChatColor.WHITE+", ");
             }
         }
 
-        return "{"+ ChatColor.AQUA +"Contents"+ ChatColor.WHITE +": ["+contents+ChatColor.WHITE +"], "
-                +ChatColor.AQUA+"UpdateCount"+ChatColor.WHITE+": "+ChatColor.GREEN+this.counter+ChatColor.WHITE+"}";
+        return "{"+ ChatColor.AQUA +"Contents"+ ChatColor.WHITE +": ["+contents+ChatColor.WHITE +"]}";
     }
 
 }

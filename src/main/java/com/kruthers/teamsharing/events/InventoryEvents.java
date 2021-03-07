@@ -23,17 +23,21 @@ import com.kruthers.teamsharing.inventory.CustomInventory;
 import com.kruthers.teamsharing.inventory.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scoreboard.Team;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class InventoryEvents implements Listener {
 
@@ -73,6 +77,7 @@ public class InventoryEvents implements Listener {
         if (event.isCancelled()) {
             Bukkit.broadcastMessage("Event is canceled");
         }
+        Bukkit.broadcastMessage("Action: "+event.getAction());
 
         // Default checks to check that the system is active and that they are ona  team
         Player player = (Player) event.getWhoClicked();
@@ -95,19 +100,9 @@ public class InventoryEvents implements Listener {
         boolean inPlayerInv = true;
         if (rawSlot < containerSlots) {
             inPlayerInv = false;
-            return; // TEMP
         }
 
         //Bukkit.broadcastMessage("\n\nEvent Start\n\n"+inv.toString());
-
-        /*
-        Actions:
-        InventoryAction.COLLECT_TO_CURSOR;
-        InventoryAction.HOTBAR_MOVE_AND_READD;
-        InventoryAction.HOTBAR_SWAP;
-        InventoryAction.MOVE_TO_OTHER_INVENTORY;
-        InventoryAction.SWAP_WITH_CURSOR;
-         */
         boolean canceled = false;
 
         if (addActions.contains(action) && inPlayerInv) {
@@ -116,15 +111,22 @@ public class InventoryEvents implements Listener {
                 item.setAmount(1);
             }
 
+            if (slot > 35 && slot < 40) {
+                if (!Utils.checkIfItemValid(slot,item)) {
+                    Bukkit.broadcastMessage("Hey this does not work in that slot!");
+                    return;
+                }
+            }
+
             if (inv.addItem(item,slot) == item.getAmount()) {
                 canceled = true;
             }
 
-        } if (removeActions.contains(action) && inPlayerInv) {
+        } else if (removeActions.contains(action) && inPlayerInv) {
             ItemStack item = event.getCurrentItem();
             ItemStack handItem = event.getCursor();
             int amount = item.getAmount();
-            if (action == InventoryAction.PICKUP_ONE) {
+            if (action == InventoryAction.PICKUP_ONE || action == InventoryAction.DROP_ONE_SLOT) {
                 amount = 1;
             } else if (action == InventoryAction.PICKUP_HALF) {
                 amount = item.getAmount() / 2;
@@ -136,6 +138,67 @@ public class InventoryEvents implements Listener {
                 canceled = true;
             }
 
+        } else if (action == InventoryAction.SWAP_WITH_CURSOR && inPlayerInv) {
+            ItemStack newItem = event.getCursor();
+            ItemStack localItem = event.getCurrentItem();
+            ItemStack invItem = inv.getItem(slot);
+
+            if (Utils.compareItems(invItem,localItem,true)) {
+                inv.setItem(newItem,slot);
+            } else {
+                canceled = true;
+            }
+
+        } else if (action == InventoryAction.HOTBAR_SWAP) {
+            int hotBarSlot = event.getHotbarButton();
+            if (hotBarSlot == -1){
+                hotBarSlot = 40;
+            }
+
+            ItemStack localHotBar = player.getInventory().getItem(hotBarSlot);
+            ItemStack invHotBar = inv.getItem(hotBarSlot);
+
+            if (Utils.compareItems(localHotBar,invHotBar,true)) {
+                if (inPlayerInv) {
+                    ItemStack localSelected = player.getInventory().getItem(slot);
+                    ItemStack invSelected = inv.getItem(slot);
+
+                    if (Utils.compareItems(localSelected,invSelected,true)) {
+                        inv.setItem(invHotBar,slot);
+                        inv.setItem(invSelected,hotBarSlot);
+                    } else {
+                        canceled = true;
+                    }
+                } else {
+                    ItemStack item = event.getInventory().getItem(slot);
+                    inv.setItem(item,hotBarSlot);
+                }
+
+            } else {
+                canceled = true;
+            }
+
+        } else if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
+            Bukkit.broadcastMessage(""+event.getResult());
+//            if (inPlayerInv) {
+//                Bukkit.broadcastMessage("Removing item from inv");
+//                ItemStack localItem = player.getInventory().getItem(slot);
+//                ItemStack item = inv.getItem(slot);
+//                if (Utils.compareItems(localItem,item,true)) {
+//                    event.get
+//                }
+//
+//            } else {
+//                Bukkit.broadcastMessage("Added item to inv");
+//
+//            }
+
+        } else if (action == InventoryAction.COLLECT_TO_CURSOR) {
+
+        } else if (action == InventoryAction.HOTBAR_MOVE_AND_READD) {
+
+        } else if (!addActions.contains(action) && !removeActions.contains(action)) {
+            player.sendMessage("Ignored action");
         }
 
         if (canceled) {
@@ -152,4 +215,164 @@ public class InventoryEvents implements Listener {
 
     }
 
+
+    @EventHandler
+    public void onDrag(InventoryDragEvent event) {
+        // Default checks to check that the system is active and that they are ona  team
+        Player player = (Player) event.getWhoClicked();
+        Team team = Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(player.getName());
+        if (team == null || !TeamSharing.isSharingActive()) return;
+        CustomInventory inv = TeamSharing.getInventory(team.getName());
+        if (inv == null) return;
+
+        boolean canceled = false;
+
+        Set<Integer> rawSlots = event.getRawSlots();
+        Iterator<Integer> iterator = rawSlots.iterator();
+        Iterator<Integer> slotIterator = event.getInventorySlots().iterator();
+        Map<Integer,ItemStack> items = event.getNewItems();
+        player.sendMessage("Dragged items in inv");
+
+        int containerSlots = event.getInventory().getSize();
+        int updatedSlots = 0;
+        while (iterator.hasNext()) {
+            int rawSlot = iterator.next();
+            int slot = slotIterator.next();
+
+            if (rawSlot > containerSlots){
+                updatedSlots++;
+                ItemStack item = items.get(rawSlot);
+
+                if (inv.getItem(slot) == null){
+                    inv.setItem(item,slot);
+                } else if (inv.getItem(slot).getType() == Material.AIR){
+                    inv.setItem(item,slot);
+                } else if (Utils.compareItems(item,inv.getItem(slot),false)) {
+                    inv.addItem(item,slot);
+                } else {
+                    canceled = true;
+                    break;
+                }
+            }
+        }
+
+        if (canceled) {
+            event.setCancelled(true);
+            player.sendMessage(ChatColor.RED+"Inventory desynced, resyncing");
+            inv.LoadToPlayer(player);
+
+        } else if (updatedSlots > 0) {
+            Utils.loadInvToTeam(inv,team.getName(),player.getUniqueId());
+            TeamSharing.setInventory(team.getName(),inv);
+        }
+
+    }
+
+
+    @EventHandler
+    public void onItemDrop(PlayerDropItemEvent event) {
+        // Default checks to check that the system is active and that they are ona  team
+        Player player = event.getPlayer();
+        Team team = Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(player.getName());
+        if (team == null || !TeamSharing.isSharingActive()) return;
+        CustomInventory inv = TeamSharing.getInventory(team.getName());
+        if (inv == null) return;
+
+
+        Bukkit.broadcastMessage("Dropping item");
+        ItemStack droppedItem = event.getItemDrop().getItemStack();
+
+        if (!droppedFromInvs.contains(player)) {
+            int slot = player.getInventory().getHeldItemSlot();
+            ItemStack handItem = inv.getItem(slot);
+
+            if (handItem == null) return;
+            if (handItem.getType() == droppedItem.getType()){
+                int count = droppedItem.getAmount();
+                ItemStack item = inv.getItem(slot);
+                count = item.getAmount() - count;
+                item.setAmount(count);
+                inv.setItem(item,slot);
+
+                Utils.loadInvToTeam(inv,team.getName(),player.getUniqueId());
+                TeamSharing.setInventory(team.getName(),inv);
+
+            } else {
+                event.setCancelled(true);
+                player.sendMessage(ChatColor.RED+"Inventory desynced, resyncing");
+                inv.LoadToPlayer(player);
+
+            }
+        } else {
+            droppedFromInvs.remove(player);
+        }
+
+    }
+
+
+    //Track off hand swap events
+    @EventHandler
+    public void onOffHandSwap(PlayerSwapHandItemsEvent event){
+        // Default checks to check that the system is active and that they are ona  team
+        Player player = event.getPlayer();
+        Team team = Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(player.getName());
+        if (team == null || !TeamSharing.isSharingActive()) return;
+        CustomInventory inv = TeamSharing.getInventory(team.getName());
+        if (inv == null) return;
+
+        int slot = player.getInventory().getHeldItemSlot();
+
+        ItemStack invOffhand = inv.getItem(40);
+        ItemStack invSlotItem = inv.getItem(slot);
+        ItemStack offhand = player.getInventory().getItemInOffHand();
+        ItemStack slotItem = player.getInventory().getItem(slot);
+
+        if (Utils.compareItems(invOffhand,offhand,true) && Utils.compareItems(invSlotItem,slotItem,true)) {
+            inv.setItem(invOffhand,slot);
+            inv.setItem(invSlotItem,40);
+
+            Utils.loadInvToTeam(inv,team.getName(),player.getUniqueId());
+            TeamSharing.setInventory(team.getName(),inv);
+
+        } else {
+            event.setCancelled(true);
+            player.sendMessage(ChatColor.RED+"Inventory desynced, resyncing");
+            inv.LoadToPlayer(player);
+        }
+
+    }
+
+
+
+    /*
+    if (Utils.checkIfItemValid(36,item)) {
+        if (inv.getItem(36).getType() == Material.AIR) {
+            inv.setItem(item,36);
+            inv.setItem(null,slot);
+        } else {
+            canceled = true;
+        }
+    } else if (Utils.checkIfItemValid(37,item)) {
+        if (inv.getItem(37).getType() == Material.AIR) {
+            inv.setItem(item,37);
+            inv.setItem(null,slot);
+        } else {
+            canceled = true;
+        }
+    } else if (Utils.checkIfItemValid(38,item)) {
+        if (inv.getItem(38).getType() == Material.AIR) {
+            inv.setItem(item,38);
+            inv.setItem(null,slot);
+        } else {
+            canceled = true;
+        }
+    } else if (Utils.checkIfItemValid(39,item)) {
+        if (inv.getItem(39).getType() == Material.AIR) {
+            inv.setItem(item,39);
+            inv.setItem(null,slot);
+        } else {
+            canceled = true;
+        }
+    }
+     */
 }
